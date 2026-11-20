@@ -1,0 +1,16 @@
+{
+  "name": "cotocollao-noc-backend",
+  "version": "1.0.0",
+  "description": "Backend REST API y servicio de notificaciones FCM para Cotocollao Network Monitor",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "test": "node --test test/api.test.js"
+  },
+  "dependencies": {
+    "firebase-admin": "^13.0.0"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}

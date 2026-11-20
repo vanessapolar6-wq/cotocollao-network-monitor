@@ -1,0 +1,6 @@
+{
+  "name": "Cotocollao Monitor",
+  "description": "Sistema de Monitoreo de Infraestructura Tecnológica y Centro de Operaciones de Red (NOC) para las 7 agencias de la Cooperativa Cotocollao.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

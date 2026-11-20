@@ -1,0 +1,253 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "Institutional NOC operator profile and RBAC role assignment",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "Firebase Auth UID" },
+        "displayName": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "role": { "type": "string", "enum": ["ADMIN", "TECHNICIAN", "MANAGER"] },
+        "active": { "type": "boolean" },
+        "department": { "type": "string" },
+        "fcmToken": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Client must write FieldValue.serverTimestamp()" },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Client must write FieldValue.serverTimestamp()" }
+      },
+      "required": ["userId", "displayName", "email", "role", "active", "createdAt", "updatedAt"]
+    },
+    "Agency": {
+      "title": "Agency",
+      "description": "Cooperativa Cotocollao branch office network infrastructure record",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "code": { "type": "string" },
+        "name": { "type": "string" },
+        "cityZone": { "type": "string" },
+        "publicIp": { "type": "string" },
+        "gatewayIp": { "type": "string" },
+        "switchIp": { "type": "string" },
+        "firewallIp": { "type": "string" },
+        "ispProvider": { "type": "string" },
+        "contractedBandwidthMbps": { "type": "integer" },
+        "status": { "type": "string", "enum": ["GREEN", "YELLOW", "RED", "GRAY"] },
+        "linkStatus": { "type": "string", "enum": ["GREEN", "YELLOW", "RED", "GRAY"] },
+        "switchStatus": { "type": "string", "enum": ["GREEN", "YELLOW", "RED", "GRAY"] },
+        "firewallStatus": { "type": "string", "enum": ["GREEN", "YELLOW", "RED", "GRAY"] },
+        "latencyMs": { "type": "integer" },
+        "packetLossPct": { "type": "number" },
+        "availabilityPct": { "type": "number" },
+        "downtimeSeconds": { "type": "integer" },
+        "noTelemetrySeconds": { "type": "integer" },
+        "lastCheckEpochMs": { "type": "integer" },
+        "lastConnectionEpochMs": { "type": "integer" },
+        "configured": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": [
+        "userId", "code", "name", "cityZone", "publicIp", "gatewayIp", "switchIp",
+        "firewallIp", "ispProvider", "contractedBandwidthMbps", "status",
+        "linkStatus", "switchStatus", "firewallStatus", "latencyMs", "packetLossPct",
+        "availabilityPct", "downtimeSeconds", "noTelemetrySeconds",
+        "lastCheckEpochMs", "lastConnectionEpochMs", "configured", "createdAt", "updatedAt"
+      ]
+    },
+    "NetworkDevice": {
+      "title": "NetworkDevice",
+      "description": "Monitored Router, Layer 3 Switch, or Firewall attached to an agency",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "agencyId": { "type": "string" },
+        "agencyName": { "type": "string" },
+        "deviceType": { "type": "string", "enum": ["ROUTER", "SWITCH_L3", "FIREWALL"] },
+        "hostname": { "type": "string" },
+        "ipAddress": { "type": "string" },
+        "brand": { "type": "string" },
+        "model": { "type": "string" },
+        "serialNumber": { "type": "string" },
+        "firmwareVersion": { "type": "string" },
+        "protocol": { "type": "string", "enum": ["ICMP", "SNMPV3", "HTTPS_API", "SYSLOG"] },
+        "secretRefId": { "type": "string" },
+        "status": { "type": "string", "enum": ["GREEN", "YELLOW", "RED", "GRAY"] },
+        "cpuPct": { "type": "integer" },
+        "ramPct": { "type": "integer" },
+        "tempCelsius": { "type": "integer" },
+        "uptimeSeconds": { "type": "integer" },
+        "activeInterfaces": { "type": "integer" },
+        "totalInterfaces": { "type": "integer" },
+        "txErrors": { "type": "integer" },
+        "droppedPackets": { "type": "integer" },
+        "vpnTunnelsUp": { "type": "integer" },
+        "vpnTunnelsTotal": { "type": "integer" },
+        "lastCheckEpochMs": { "type": "integer" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": [
+        "userId", "agencyId", "agencyName", "deviceType", "hostname", "ipAddress",
+        "brand", "model", "serialNumber", "firmwareVersion", "protocol", "secretRefId",
+        "status", "cpuPct", "ramPct", "tempCelsius", "uptimeSeconds", "activeInterfaces",
+        "totalInterfaces", "txErrors", "droppedPackets", "vpnTunnelsUp", "vpnTunnelsTotal",
+        "lastCheckEpochMs", "createdAt", "updatedAt"
+      ]
+    },
+    "Incident": {
+      "title": "Incident",
+      "description": "Infrastructure incident lifecycle record",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "code": { "type": "string" },
+        "agencyId": { "type": "string" },
+        "agencyName": { "type": "string" },
+        "deviceId": { "type": "string" },
+        "deviceName": { "type": "string" },
+        "deviceType": { "type": "string", "enum": ["ROUTER", "SWITCH_L3", "FIREWALL", "INTERNET_LINK", "VPN"] },
+        "failureType": { "type": "string" },
+        "severity": { "type": "string", "enum": ["CRITICAL", "HIGH", "MEDIUM", "LOW"] },
+        "status": { "type": "string", "enum": ["NEW", "IN_PROGRESS", "ESCALATED", "RESOLVED", "CLOSED"] },
+        "startedAtEpochMs": { "type": "integer" },
+        "recoveredAtEpochMs": { "type": "integer" },
+        "durationSeconds": { "type": "integer" },
+        "assignedTo": { "type": "string" },
+        "diagnosis": { "type": "string" },
+        "solution": { "type": "string" },
+        "observations": { "type": "string" },
+        "evidenceNote": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": [
+        "userId", "code", "agencyId", "agencyName", "deviceId", "deviceName",
+        "deviceType", "failureType", "severity", "status", "startedAtEpochMs",
+        "recoveredAtEpochMs", "durationSeconds", "assignedTo", "diagnosis",
+        "solution", "observations", "evidenceNote", "createdAt", "updatedAt"
+      ]
+    },
+    "AlertEvent": {
+      "title": "AlertEvent",
+      "description": "Automatic alert notification and historical event record",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "agencyId": { "type": "string" },
+        "agencyName": { "type": "string" },
+        "deviceName": { "type": "string" },
+        "deviceIp": { "type": "string" },
+        "incidentType": { "type": "string" },
+        "severity": { "type": "string", "enum": ["CRITICAL", "WARNING", "INFO", "RECOVERY"] },
+        "description": { "type": "string" },
+        "currentStatus": { "type": "string" },
+        "recommendation": { "type": "string" },
+        "durationSeconds": { "type": "integer" },
+        "occurrences": { "type": "integer" },
+        "acknowledged": { "type": "boolean" },
+        "eventEpochMs": { "type": "integer" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": [
+        "userId", "agencyId", "agencyName", "deviceName", "deviceIp", "incidentType",
+        "severity", "description", "currentStatus", "recommendation", "durationSeconds",
+        "occurrences", "acknowledged", "eventEpochMs", "createdAt", "updatedAt"
+      ]
+    },
+    "MonitoringThresholds": {
+      "title": "MonitoringThresholds",
+      "description": "Global monitoring parameters and alert thresholds",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "pingIntervalSec": { "type": "integer" },
+        "pingTimeoutSec": { "type": "integer" },
+        "failuresForDown": { "type": "integer" },
+        "successesForRecovery": { "type": "integer" },
+        "cpuThresholdPct": { "type": "integer" },
+        "ramThresholdPct": { "type": "integer" },
+        "tempThresholdC": { "type": "integer" },
+        "packetLossThresholdPct": { "type": "number" },
+        "latencyThresholdMs": { "type": "integer" },
+        "backendBaseUrl": { "type": "string" },
+        "dedupWindowMinutes": { "type": "integer" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": [
+        "userId", "pingIntervalSec", "pingTimeoutSec", "failuresForDown",
+        "successesForRecovery", "cpuThresholdPct", "ramThresholdPct", "tempThresholdC",
+        "packetLossThresholdPct", "latencyThresholdMs", "backendBaseUrl",
+        "dedupWindowMinutes", "createdAt", "updatedAt"
+      ]
+    },
+    "TeamMember": {
+      "title": "TeamMember",
+      "description": "Authorized institutional staff entry for RBAC directory",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "fullName": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "role": { "type": "string", "enum": ["ADMIN", "TECHNICIAN", "MANAGER"] },
+        "active": { "type": "boolean" },
+        "department": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "fullName", "email", "role", "active", "department", "createdAt", "updatedAt"]
+    },
+    "AuditLog": {
+      "title": "AuditLog",
+      "description": "Immutable security and configuration audit log entry",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "actorEmail": { "type": "string" },
+        "actorRole": { "type": "string", "enum": ["ADMIN", "TECHNICIAN", "MANAGER"] },
+        "action": { "type": "string" },
+        "target": { "type": "string" },
+        "details": { "type": "string" },
+        "timestampEpochMs": { "type": "integer" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "actorEmail", "actorRole", "action", "target", "details", "timestampEpochMs", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserProfile" },
+      "description": "Operator profile and RBAC role"
+    },
+    "/users/{userId}/agencies/{agencyId}": {
+      "schema": { "$ref": "#/entities/Agency" },
+      "description": "The 7 monitored agencies"
+    },
+    "/users/{userId}/devices/{deviceId}": {
+      "schema": { "$ref": "#/entities/NetworkDevice" },
+      "description": "Routers, Layer 3 switches, and firewalls"
+    },
+    "/users/{userId}/incidents/{incidentId}": {
+      "schema": { "$ref": "#/entities/Incident" },
+      "description": "Incident management records"
+    },
+    "/users/{userId}/alerts/{alertId}": {
+      "schema": { "$ref": "#/entities/AlertEvent" },
+      "description": "Push notification and event history records"
+    },
+    "/users/{userId}/thresholds/{configId}": {
+      "schema": { "$ref": "#/entities/MonitoringThresholds" },
+      "description": "Monitoring intervals and alert thresholds"
+    },
+    "/users/{userId}/team_members/{memberId}": {
+      "schema": { "$ref": "#/entities/TeamMember" },
+      "description": "Authorized institutional users directory"
+    },
+    "/users/{userId}/audit_logs/{logId}": {
+      "schema": { "$ref": "#/entities/AuditLog" },
+      "description": "Immutable security audit log"
+    }
+  }
+}

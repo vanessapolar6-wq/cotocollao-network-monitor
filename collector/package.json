@@ -1,0 +1,12 @@
+{
+  "name": "cotocollao-noc-collector",
+  "version": "1.0.0",
+  "description": "Agente colector de infraestructura (ICMP, SNMPv3, Syslog, HTTPS API) para Cooperativa Cotocollao",
+  "main": "agent.js",
+  "scripts": {
+    "start": "node agent.js"
+  },
+  "dependencies": {
+    "net-snmp": "^3.19.0"
+  }
+}

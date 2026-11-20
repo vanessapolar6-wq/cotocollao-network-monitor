@@ -1,0 +1,34 @@
+{
+  "collectorId": "collector-matriz-01",
+  "backendUrl": "https://your-cloud-run-backend.run.app",
+  "intervalSec": 30,
+  "pingTimeoutSec": 3,
+  "syslogPort": 5514,
+  "agencies": [
+    {
+      "agencyId": "matriz",
+      "publicIp": "CONFIGURE_PUBLIC_IP",
+      "gatewayIp": "CONFIGURE_GATEWAY_IP",
+      "devices": [
+        {
+          "deviceId": "matriz-sw-01",
+          "deviceType": "SWITCH_L3",
+          "hostname": "SW-MATRIZ-CORE",
+          "ipAddress": "CONFIGURE_SWITCH_IP",
+          "protocol": "SNMPV3",
+          "snmpV3User": "ENV:SNMPV3_USER",
+          "snmpAuthKeyEnv": "SNMPV3_AUTH_KEY",
+          "snmpPrivKeyEnv": "SNMPV3_PRIV_KEY"
+        },
+        {
+          "deviceId": "matriz-fw-01",
+          "deviceType": "FIREWALL",
+          "hostname": "FW-MATRIZ-EDGE",
+          "ipAddress": "CONFIGURE_FIREWALL_IP",
+          "protocol": "HTTPS_API",
+          "apiTokenEnv": "FIREWALL_API_TOKEN"
+        }
+      ]
+    }
+  ]
+}

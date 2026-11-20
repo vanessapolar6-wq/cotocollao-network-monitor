@@ -1,0 +1,432 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global safety net: default deny everything
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isBootstrappedAdmin() {
+      return isSignedIn() &&
+             ('email_verified' in request.auth.token) &&
+             request.auth.token.email_verified == true &&
+             ('email' in request.auth.token) &&
+             request.auth.token.email == 'vanessapolar6@gmail.com';
+    }
+
+    function isAdmin() {
+      return isBootstrappedAdmin() ||
+             (isSignedIn() && exists(/databases/$(database)/documents/admins/$(request.auth.uid)));
+    }
+
+    function isValidRole(role) {
+      return role in ['ADMIN', 'TECHNICIAN', 'MANAGER'];
+    }
+
+    function isValidTrafficLight(status) {
+      return status in ['GREEN', 'YELLOW', 'RED', 'GRAY'];
+    }
+
+    function isValidTimestamp(ts) {
+      return ts is timestamp && ts <= request.time;
+    }
+
+    function isValidUserProfile(data, userId) {
+      return data.userId == userId &&
+             data.displayName is string && data.displayName.size() >= 1 && data.displayName.size() <= 80 &&
+             data.email is string && data.email.size() >= 3 && data.email.size() <= 120 &&
+             data.role is string && isValidRole(data.role) &&
+             data.active is bool &&
+             (!('department' in data) || (data.department is string && data.department.size() <= 80)) &&
+             (!('fcmToken' in data) || (data.fcmToken is string && data.fcmToken.size() <= 512)) &&
+             isValidTimestamp(data.createdAt) &&
+             isValidTimestamp(data.updatedAt);
+    }
+
+    function isValidAgency(data, userId) {
+      return data.userId == userId &&
+             data.code is string && data.code.size() >= 1 && data.code.size() <= 20 &&
+             data.name is string && data.name.size() >= 1 && data.name.size() <= 60 &&
+             data.cityZone is string && data.cityZone.size() <= 80 &&
+             data.publicIp is string && data.publicIp.size() <= 64 &&
+             data.gatewayIp is string && data.gatewayIp.size() <= 64 &&
+             data.switchIp is string && data.switchIp.size() <= 64 &&
+             data.firewallIp is string && data.firewallIp.size() <= 64 &&
+             data.ispProvider is string && data.ispProvider.size() <= 80 &&
+             data.contractedBandwidthMbps is int && data.contractedBandwidthMbps >= 0 && data.contractedBandwidthMbps <= 100000 &&
+             isValidTrafficLight(data.status) &&
+             isValidTrafficLight(data.linkStatus) &&
+             isValidTrafficLight(data.switchStatus) &&
+             isValidTrafficLight(data.firewallStatus) &&
+             data.latencyMs is int && data.latencyMs >= 0 && data.latencyMs <= 60000 &&
+             data.packetLossPct is number && data.packetLossPct >= 0 && data.packetLossPct <= 100 &&
+             data.availabilityPct is number && data.availabilityPct >= 0 && data.availabilityPct <= 100 &&
+             data.downtimeSeconds is int && data.downtimeSeconds >= 0 &&
+             data.noTelemetrySeconds is int && data.noTelemetrySeconds >= 0 &&
+             data.lastCheckEpochMs is int && data.lastCheckEpochMs >= 0 &&
+             data.lastConnectionEpochMs is int && data.lastConnectionEpochMs >= 0 &&
+             data.configured is bool &&
+             isValidTimestamp(data.createdAt) &&
+             isValidTimestamp(data.updatedAt);
+    }
+
+    function isValidDevice(data, userId) {
+      return data.userId == userId &&
+             isValidId(data.agencyId) &&
+             data.agencyName is string && data.agencyName.size() >= 1 && data.agencyName.size() <= 60 &&
+             data.deviceType in ['ROUTER', 'SWITCH_L3', 'FIREWALL'] &&
+             data.hostname is string && data.hostname.size() >= 1 && data.hostname.size() <= 80 &&
+             data.ipAddress is string && data.ipAddress.size() <= 64 &&
+             data.brand is string && data.brand.size() <= 60 &&
+             data.model is string && data.model.size() <= 60 &&
+             data.serialNumber is string && data.serialNumber.size() <= 80 &&
+             data.firmwareVersion is string && data.firmwareVersion.size() <= 60 &&
+             data.protocol in ['ICMP', 'SNMPV3', 'HTTPS_API', 'SYSLOG'] &&
+             data.secretRefId is string && data.secretRefId.size() <= 120 &&
+             isValidTrafficLight(data.status) &&
+             data.cpuPct is int && data.cpuPct >= 0 && data.cpuPct <= 100 &&
+             data.ramPct is int && data.ramPct >= 0 && data.ramPct <= 100 &&
+             data.tempCelsius is int && data.tempCelsius >= 0 && data.tempCelsius <= 150 &&
+             data.uptimeSeconds is int && data.uptimeSeconds >= 0 &&
+             data.activeInterfaces is int && data.activeInterfaces >= 0 && data.activeInterfaces <= 512 &&
+             data.totalInterfaces is int && data.totalInterfaces >= 0 && data.totalInterfaces <= 512 &&
+             data.txErrors is int && data.txErrors >= 0 &&
+             data.droppedPackets is int && data.droppedPackets >= 0 &&
+             data.vpnTunnelsUp is int && data.vpnTunnelsUp >= 0 && data.vpnTunnelsUp <= 256 &&
+             data.vpnTunnelsTotal is int && data.vpnTunnelsTotal >= 0 && data.vpnTunnelsTotal <= 256 &&
+             data.lastCheckEpochMs is int && data.lastCheckEpochMs >= 0 &&
+             isValidTimestamp(data.createdAt) &&
+             isValidTimestamp(data.updatedAt);
+    }
+
+    function isValidIncident(data, userId) {
+      return data.userId == userId &&
+             data.code is string && data.code.size() >= 1 && data.code.size() <= 32 &&
+             isValidId(data.agencyId) &&
+             data.agencyName is string && data.agencyName.size() >= 1 && data.agencyName.size() <= 60 &&
+             data.deviceId is string && data.deviceId.size() <= 128 &&
+             data.deviceName is string && data.deviceName.size() >= 1 && data.deviceName.size() <= 80 &&
+             data.deviceType in ['ROUTER', 'SWITCH_L3', 'FIREWALL', 'INTERNET_LINK', 'VPN'] &&
+             data.failureType is string && data.failureType.size() >= 1 && data.failureType.size() <= 80 &&
+             data.severity in ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'] &&
+             data.status in ['NEW', 'IN_PROGRESS', 'ESCALATED', 'RESOLVED', 'CLOSED'] &&
+             data.startedAtEpochMs is int && data.startedAtEpochMs >= 0 &&
+             data.recoveredAtEpochMs is int && data.recoveredAtEpochMs >= 0 &&
+             data.durationSeconds is int && data.durationSeconds >= 0 &&
+             data.assignedTo is string && data.assignedTo.size() <= 80 &&
+             data.diagnosis is string && data.diagnosis.size() <= 1000 &&
+             data.solution is string && data.solution.size() <= 1000 &&
+             data.observations is string && data.observations.size() <= 1000 &&
+             data.evidenceNote is string && data.evidenceNote.size() <= 500 &&
+             isValidTimestamp(data.createdAt) &&
+             isValidTimestamp(data.updatedAt);
+    }
+
+    function isValidAlert(data, userId) {
+      return data.userId == userId &&
+             isValidId(data.agencyId) &&
+             data.agencyName is string && data.agencyName.size() >= 1 && data.agencyName.size() <= 60 &&
+             data.deviceName is string && data.deviceName.size() >= 1 && data.deviceName.size() <= 80 &&
+             data.deviceIp is string && data.deviceIp.size() <= 64 &&
+             data.incidentType is string && data.incidentType.size() >= 1 && data.incidentType.size() <= 80 &&
+             data.severity in ['CRITICAL', 'WARNING', 'INFO', 'RECOVERY'] &&
+             data.description is string && data.description.size() >= 1 && data.description.size() <= 500 &&
+             data.currentStatus is string && data.currentStatus.size() >= 1 && data.currentStatus.size() <= 60 &&
+             data.recommendation is string && data.recommendation.size() >= 1 && data.recommendation.size() <= 500 &&
+             data.durationSeconds is int && data.durationSeconds >= 0 &&
+             data.occurrences is int && data.occurrences >= 1 && data.occurrences <= 10000 &&
+             data.acknowledged is bool &&
+             data.eventEpochMs is int && data.eventEpochMs >= 0 &&
+             isValidTimestamp(data.createdAt) &&
+             isValidTimestamp(data.updatedAt);
+    }
+
+    function isValidThresholds(data, userId) {
+      return data.userId == userId &&
+             data.pingIntervalSec is int && data.pingIntervalSec >= 5 && data.pingIntervalSec <= 3600 &&
+             data.pingTimeoutSec is int && data.pingTimeoutSec >= 1 && data.pingTimeoutSec <= 60 &&
+             data.failuresForDown is int && data.failuresForDown >= 1 && data.failuresForDown <= 20 &&
+             data.successesForRecovery is int && data.successesForRecovery >= 1 && data.successesForRecovery <= 20 &&
+             data.cpuThresholdPct is int && data.cpuThresholdPct >= 10 && data.cpuThresholdPct <= 100 &&
+             data.ramThresholdPct is int && data.ramThresholdPct >= 10 && data.ramThresholdPct <= 100 &&
+             data.tempThresholdC is int && data.tempThresholdC >= 30 && data.tempThresholdC <= 120 &&
+             data.packetLossThresholdPct is number && data.packetLossThresholdPct >= 0.5 && data.packetLossThresholdPct <= 100 &&
+             data.latencyThresholdMs is int && data.latencyThresholdMs >= 10 && data.latencyThresholdMs <= 10000 &&
+             data.backendBaseUrl is string && data.backendBaseUrl.size() <= 250 &&
+             data.dedupWindowMinutes is int && data.dedupWindowMinutes >= 1 && data.dedupWindowMinutes <= 1440 &&
+             isValidTimestamp(data.createdAt) &&
+             isValidTimestamp(data.updatedAt);
+    }
+
+    function isValidTeamMember(data, userId) {
+      return data.userId == userId &&
+             data.fullName is string && data.fullName.size() >= 1 && data.fullName.size() <= 80 &&
+             data.email is string && data.email.size() >= 3 && data.email.size() <= 120 &&
+             isValidRole(data.role) &&
+             data.active is bool &&
+             data.department is string && data.department.size() <= 80 &&
+             isValidTimestamp(data.createdAt) &&
+             isValidTimestamp(data.updatedAt);
+    }
+
+    function isValidAuditLog(data, userId) {
+      return data.userId == userId &&
+             data.actorEmail is string && data.actorEmail.size() <= 120 &&
+             isValidRole(data.actorRole) &&
+             data.action is string && data.action.size() >= 1 && data.action.size() <= 80 &&
+             data.target is string && data.target.size() >= 1 && data.target.size() <= 120 &&
+             data.details is string && data.details.size() <= 500 &&
+             data.timestampEpochMs is int && data.timestampEpochMs >= 0 &&
+             isValidTimestamp(data.createdAt);
+    }
+
+    match /admins/{adminId} {
+      allow get: if isSignedIn() && (request.auth.uid == adminId || isAdmin());
+      allow list, write: if false;
+    }
+
+    match /users/{userId} {
+      allow get: if isValidId(userId) && (isOwner(userId) || isAdmin());
+      allow list: if isSignedIn() && existing().userId == request.auth.uid;
+
+      allow create: if isValidId(userId) &&
+                       isOwner(userId) &&
+                       incoming().keys().hasAll(['userId', 'displayName', 'email', 'role', 'active', 'createdAt', 'updatedAt']) &&
+                       incoming().keys().hasOnly(['userId', 'displayName', 'email', 'role', 'active', 'department', 'fcmToken', 'createdAt', 'updatedAt']) &&
+                       isValidUserProfile(incoming(), userId) &&
+                       (incoming().role == 'MANAGER' || (incoming().role == 'ADMIN' && isBootstrappedAdmin()));
+
+      allow update: if isValidId(userId) &&
+                       (isOwner(userId) || isAdmin()) &&
+                       isValidUserProfile(incoming(), userId) &&
+                       incoming().userId == existing().userId &&
+                       incoming().createdAt == existing().createdAt &&
+                       (
+                         isAdmin() ||
+                         incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'department', 'fcmToken', 'updatedAt'])
+                       );
+
+      allow delete: if isValidId(userId) && isOwner(userId);
+
+      match /agencies/{agencyId} {
+        allow get: if isValidId(agencyId) && isOwner(userId);
+        allow list: if isOwner(userId);
+        allow create: if isValidId(agencyId) &&
+                         isOwner(userId) &&
+                         incoming().keys().hasAll([
+                           'userId', 'code', 'name', 'cityZone', 'publicIp', 'gatewayIp', 'switchIp',
+                           'firewallIp', 'ispProvider', 'contractedBandwidthMbps', 'status',
+                           'linkStatus', 'switchStatus', 'firewallStatus', 'latencyMs', 'packetLossPct',
+                           'availabilityPct', 'downtimeSeconds', 'noTelemetrySeconds',
+                           'lastCheckEpochMs', 'lastConnectionEpochMs', 'configured', 'createdAt', 'updatedAt'
+                         ]) &&
+                         incoming().keys().hasOnly([
+                           'userId', 'code', 'name', 'cityZone', 'publicIp', 'gatewayIp', 'switchIp',
+                           'firewallIp', 'ispProvider', 'contractedBandwidthMbps', 'status',
+                           'linkStatus', 'switchStatus', 'firewallStatus', 'latencyMs', 'packetLossPct',
+                           'availabilityPct', 'downtimeSeconds', 'noTelemetrySeconds',
+                           'lastCheckEpochMs', 'lastConnectionEpochMs', 'configured', 'createdAt', 'updatedAt'
+                         ]) &&
+                         isValidAgency(incoming(), userId);
+        allow update: if isValidId(agencyId) &&
+                         isOwner(userId) &&
+                         isValidAgency(incoming(), userId) &&
+                         incoming().userId == existing().userId &&
+                         incoming().createdAt == existing().createdAt &&
+                         incoming().diff(existing()).affectedKeys().hasOnly([
+                           'name', 'cityZone', 'publicIp', 'gatewayIp', 'switchIp', 'firewallIp',
+                           'ispProvider', 'contractedBandwidthMbps', 'status', 'linkStatus',
+                           'switchStatus', 'firewallStatus', 'latencyMs', 'packetLossPct',
+                           'availabilityPct', 'downtimeSeconds', 'noTelemetrySeconds',
+                           'lastCheckEpochMs', 'lastConnectionEpochMs', 'configured', 'updatedAt'
+                         ]);
+        allow delete: if isValidId(agencyId) && isOwner(userId);
+      }
+
+      match /devices/{deviceId} {
+        allow get: if isValidId(deviceId) && isOwner(userId);
+        allow list: if isOwner(userId);
+        allow create: if isValidId(deviceId) &&
+                         isOwner(userId) &&
+                         incoming().keys().hasAll([
+                           'userId', 'agencyId', 'agencyName', 'deviceType', 'hostname', 'ipAddress',
+                           'brand', 'model', 'serialNumber', 'firmwareVersion', 'protocol', 'secretRefId',
+                           'status', 'cpuPct', 'ramPct', 'tempCelsius', 'uptimeSeconds', 'activeInterfaces',
+                           'totalInterfaces', 'txErrors', 'droppedPackets', 'vpnTunnelsUp', 'vpnTunnelsTotal',
+                           'lastCheckEpochMs', 'createdAt', 'updatedAt'
+                         ]) &&
+                         incoming().keys().hasOnly([
+                           'userId', 'agencyId', 'agencyName', 'deviceType', 'hostname', 'ipAddress',
+                           'brand', 'model', 'serialNumber', 'firmwareVersion', 'protocol', 'secretRefId',
+                           'status', 'cpuPct', 'ramPct', 'tempCelsius', 'uptimeSeconds', 'activeInterfaces',
+                           'totalInterfaces', 'txErrors', 'droppedPackets', 'vpnTunnelsUp', 'vpnTunnelsTotal',
+                           'lastCheckEpochMs', 'createdAt', 'updatedAt'
+                         ]) &&
+                         isValidDevice(incoming(), userId) &&
+                         exists(/databases/$(database)/documents/users/$(userId)/agencies/$(incoming().agencyId));
+        allow update: if isValidId(deviceId) &&
+                         isOwner(userId) &&
+                         isValidDevice(incoming(), userId) &&
+                         incoming().userId == existing().userId &&
+                         incoming().createdAt == existing().createdAt &&
+                         incoming().diff(existing()).affectedKeys().hasOnly([
+                           'agencyId', 'agencyName', 'deviceType', 'hostname', 'ipAddress',
+                           'brand', 'model', 'serialNumber', 'firmwareVersion', 'protocol', 'secretRefId',
+                           'status', 'cpuPct', 'ramPct', 'tempCelsius', 'uptimeSeconds', 'activeInterfaces',
+                           'totalInterfaces', 'txErrors', 'droppedPackets', 'vpnTunnelsUp', 'vpnTunnelsTotal',
+                           'lastCheckEpochMs', 'updatedAt'
+                         ]);
+        allow delete: if isValidId(deviceId) && isOwner(userId);
+      }
+
+      match /incidents/{incidentId} {
+        allow get: if isValidId(incidentId) && isOwner(userId);
+        allow list: if isOwner(userId);
+        allow create: if isValidId(incidentId) &&
+                         isOwner(userId) &&
+                         incoming().keys().hasAll([
+                           'userId', 'code', 'agencyId', 'agencyName', 'deviceId', 'deviceName',
+                           'deviceType', 'failureType', 'severity', 'status', 'startedAtEpochMs',
+                           'recoveredAtEpochMs', 'durationSeconds', 'assignedTo', 'diagnosis',
+                           'solution', 'observations', 'evidenceNote', 'createdAt', 'updatedAt'
+                         ]) &&
+                         incoming().keys().hasOnly([
+                           'userId', 'code', 'agencyId', 'agencyName', 'deviceId', 'deviceName',
+                           'deviceType', 'failureType', 'severity', 'status', 'startedAtEpochMs',
+                           'recoveredAtEpochMs', 'durationSeconds', 'assignedTo', 'diagnosis',
+                           'solution', 'observations', 'evidenceNote', 'createdAt', 'updatedAt'
+                         ]) &&
+                         isValidIncident(incoming(), userId) &&
+                         exists(/databases/$(database)/documents/users/$(userId)/agencies/$(incoming().agencyId));
+        allow update: if isValidId(incidentId) &&
+                         isOwner(userId) &&
+                         isValidIncident(incoming(), userId) &&
+                         incoming().userId == existing().userId &&
+                         incoming().createdAt == existing().createdAt &&
+                         (existing().status != 'CLOSED' || isAdmin()) &&
+                         incoming().diff(existing()).affectedKeys().hasOnly([
+                           'status', 'severity', 'recoveredAtEpochMs', 'durationSeconds',
+                           'assignedTo', 'diagnosis', 'solution', 'observations', 'evidenceNote', 'updatedAt'
+                         ]);
+        allow delete: if isValidId(incidentId) && isOwner(userId);
+      }
+
+      match /alerts/{alertId} {
+        allow get: if isValidId(alertId) && isOwner(userId);
+        allow list: if isOwner(userId);
+        allow create: if isValidId(alertId) &&
+                         isOwner(userId) &&
+                         incoming().keys().hasAll([
+                           'userId', 'agencyId', 'agencyName', 'deviceName', 'deviceIp', 'incidentType',
+                           'severity', 'description', 'currentStatus', 'recommendation', 'durationSeconds',
+                           'occurrences', 'acknowledged', 'eventEpochMs', 'createdAt', 'updatedAt'
+                         ]) &&
+                         incoming().keys().hasOnly([
+                           'userId', 'agencyId', 'agencyName', 'deviceName', 'deviceIp', 'incidentType',
+                           'severity', 'description', 'currentStatus', 'recommendation', 'durationSeconds',
+                           'occurrences', 'acknowledged', 'eventEpochMs', 'createdAt', 'updatedAt'
+                         ]) &&
+                         isValidAlert(incoming(), userId);
+        allow update: if isValidId(alertId) &&
+                         isOwner(userId) &&
+                         isValidAlert(incoming(), userId) &&
+                         incoming().userId == existing().userId &&
+                         incoming().createdAt == existing().createdAt &&
+                         incoming().diff(existing()).affectedKeys().hasOnly([
+                           'acknowledged', 'occurrences', 'currentStatus', 'updatedAt'
+                         ]);
+        allow delete: if isValidId(alertId) && isOwner(userId);
+      }
+
+      match /thresholds/{configId} {
+        allow get: if isValidId(configId) && isOwner(userId);
+        allow list: if isOwner(userId);
+        allow create: if isValidId(configId) &&
+                         isOwner(userId) &&
+                         incoming().keys().hasAll([
+                           'userId', 'pingIntervalSec', 'pingTimeoutSec', 'failuresForDown',
+                           'successesForRecovery', 'cpuThresholdPct', 'ramThresholdPct', 'tempThresholdC',
+                           'packetLossThresholdPct', 'latencyThresholdMs', 'backendBaseUrl',
+                           'dedupWindowMinutes', 'createdAt', 'updatedAt'
+                         ]) &&
+                         incoming().keys().hasOnly([
+                           'userId', 'pingIntervalSec', 'pingTimeoutSec', 'failuresForDown',
+                           'successesForRecovery', 'cpuThresholdPct', 'ramThresholdPct', 'tempThresholdC',
+                           'packetLossThresholdPct', 'latencyThresholdMs', 'backendBaseUrl',
+                           'dedupWindowMinutes', 'createdAt', 'updatedAt'
+                         ]) &&
+                         isValidThresholds(incoming(), userId);
+        allow update: if isValidId(configId) &&
+                         isOwner(userId) &&
+                         isValidThresholds(incoming(), userId) &&
+                         incoming().userId == existing().userId &&
+                         incoming().createdAt == existing().createdAt &&
+                         incoming().diff(existing()).affectedKeys().hasOnly([
+                           'pingIntervalSec', 'pingTimeoutSec', 'failuresForDown', 'successesForRecovery',
+                           'cpuThresholdPct', 'ramThresholdPct', 'tempThresholdC', 'packetLossThresholdPct',
+                           'latencyThresholdMs', 'backendBaseUrl', 'dedupWindowMinutes', 'updatedAt'
+                         ]);
+        allow delete: if false;
+      }
+
+      match /team_members/{memberId} {
+        allow get: if isValidId(memberId) && isOwner(userId);
+        allow list: if isOwner(userId);
+        allow create: if isValidId(memberId) &&
+                         isOwner(userId) &&
+                         incoming().keys().hasAll([
+                           'userId', 'fullName', 'email', 'role', 'active', 'department', 'createdAt', 'updatedAt'
+                         ]) &&
+                         incoming().keys().hasOnly([
+                           'userId', 'fullName', 'email', 'role', 'active', 'department', 'createdAt', 'updatedAt'
+                         ]) &&
+                         isValidTeamMember(incoming(), userId);
+        allow update: if isValidId(memberId) &&
+                         isOwner(userId) &&
+                         isValidTeamMember(incoming(), userId) &&
+                         incoming().userId == existing().userId &&
+                         incoming().createdAt == existing().createdAt &&
+                         incoming().diff(existing()).affectedKeys().hasOnly([
+                           'fullName', 'email', 'role', 'active', 'department', 'updatedAt'
+                         ]);
+        allow delete: if isValidId(memberId) && isOwner(userId);
+      }
+
+      match /audit_logs/{logId} {
+        allow get: if isValidId(logId) && isOwner(userId);
+        allow list: if isOwner(userId);
+        allow create: if isValidId(logId) &&
+                         isOwner(userId) &&
+                         incoming().keys().hasAll([
+                           'userId', 'actorEmail', 'actorRole', 'action', 'target', 'details', 'timestampEpochMs', 'createdAt'
+                         ]) &&
+                         incoming().keys().hasOnly([
+                           'userId', 'actorEmail', 'actorRole', 'action', 'target', 'details', 'timestampEpochMs', 'createdAt'
+                         ]) &&
+                         isValidAuditLog(incoming(), userId);
+        allow update, delete: if false;
+      }
+    }
+  }
+}
